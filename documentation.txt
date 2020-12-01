@@ -1,0 +1,163 @@
+Aim Documentation
+****Integrating Aim*****
+1. Create your aim.conf file (copy default aim.conf and its .htaccess file) in your project directory
+2. Modify the <aim-connection   /> group to point to your project database (If no database to point to set "type":"auto"
+
+****Using Aim*****
+1. in index.php, include aim.php
+2. call $_->Start(pathtostartpage.aim) (Note: if pathtostartpage.aim not set aim looks for home.aim or index.aim file in your project directary)
+
+****Importing Aim File*****
+There are two ways to import an aim file into another aim file
+
+1. Inline Import =>  Import into a particular location in the file
+                     a. use the aim-import tag
+                     b. set the content of the tag to the path of the aim file to import, preceded by @
+                     e.g <aim-import>@root://path_to_aim_file.aim</aim-import>
+
+2. Header Import =>  Import into the aim file using the Header Tag
+                     Note: Header Import will replace all markup with the imported file
+                     It is done by referensing the path to the imported file in the header tag
+                     Note: code behind script will have server language extension (.php), while aim importable file will have the .aim extension
+                     e.g <% @root://engine/main.php Loaddata @root://file/to/import.aim %>
+                     Limitation: it clears all Fillable Data along with the markup
+
+***Aim Object***
+Note: Any Html element whose class list contains any of the aim object identifies (Listed and explained below) are said to be a valid aim object
+
+1. aim-datafill
+   Description => Load and Fill .aim file with data from the source or backend (Note backend mapping will be done on the .aim file)
+   Attributes =>  aim-src: the path to the .aim file to fill with data
+                  aim-container: the container element where the filled aim file will be loaded (accept html id, class attribute)
+                  aim-data: data to supply/fill into the .aim file or data to be sent to the code behind assign to the .aim file to fill (format:data,data1,data2...). Note data can be a valid data string (attr=val&attr1=val1..), a json data, aim/html selectors(.classname, #id, tagname, combined selector) - all element selected should have aim-datafield attribute which represent the data atribute and the element value as value
+
+2. aim-trigger
+   Description => Activate/Trigger and Aim Object to perform its action or perform any trigger pre-defined actions
+   Attributes =>  aim-trigger-target: the aim object to activate by the aim trigger object 
+                  (Note any valid aim/html selectors are allowed - see aim-data attribute of aim-datafill)
+                  *aim-trigger-data: (Experimental) Send the value of the trigger object as part of the data of the aim object activated
+                  aim-trigger-action: the user event/action to simulate on the target aim object (e.g aim-click, simulate a click operation on the target aim object)
+                  aim-trigger-event: the js user event to trigger aim-trigger object itself, if not set, aim use the following based on the tagname of the trigger object (select/input radio|checkbox => onchange, input text|password|email|tel / textarea / editable divs => oninput, others => onclick )
+
+3. aim-toggler
+   Description => Perform a special (toggler operation) on an element
+   Attributes =>  aim-toggler-remove: the id, classname, query selector or special toggler selector(aim-body:document.body,aim-this:the toggler object itself,aim-parent:the parent element of the toggler object, aim-parent-parent-...:get the parent element the number of parent specified,aim-next-sibling:next sibling,aim-previous-sibling:previous sibling) of the element to remove
+
+4. aim-autoload
+   Description => Automatically Trigger an object
+   Attributes =>  aim-autoload-delay: the delay time in seconds before the aim-object is triggered
+
+
+***Aim Tags****
+Note: All aim tagname must not start with a space.
+      e.g - <aim-import> => valid
+            < aim-import> => invalid
+      Opening tag attribute value must not contain the > symbol. will be fixed later
+      e.g - <aim-widget TextBox Text="my>hdjj"></aim-widget> => Error
+
+Header tag -   use to specify operations that the aim server engine will do on the file. e.g code behind call on the file
+               Tag      => <% ... %>
+               Content  => Code Behind Call => @path_to_codebehind_script FunctionName
+                           File Name(ID) => #name_of_file - use to identify the file e.g alert file. OR use to identify dynamic header (code behind) i.e the codebehind can be supplied via local data or post data
+
+
+***Aim Placeholders***
+A Placeholder is use to specify where Data will be inserted on a valid aim file (*.aim, *.aia, *.aiw), the key must be enclosed in {{}}
+Note: If key does not exist aim will ignore
+
+Value Placeholder => Represent where a value will be inserted, specified by its key - {{key}}
+
+Array Placeholder => Represent the markup region to be filled or/and repeated by the array data. the placeholder is use to specify the begining and ending of the markup - {{ArrayName}}Markup{{ArrayName}}
+                     a. Repeat Only:e.g "ArrayName":[5] - will reapeat the markup 5 times, "ArrayName":[0] - will remove the markup
+                     b. Fill Only:e.g "ArrayName":{"Key1":"Val1","Key2":"Val2","Key3":"Val3"} - will fill the markup with the key values
+                     c. Repeat and Fill:e.g "ArrayName":[
+                        {"Key1":"Val1","Key2":"Val2","Key3":"Val3"},
+                        {"Key1":"Val1","Key2":"Val2","Key3":"Val3"}
+                     ] - will reapeat markup 2 times and fill with corresponding key values - use the key placeholder of each array object to reference its value withen the markup {{ArrayName}}Markup{{Key1}}Markup{{ArrayName}}
+                     Note: i. For numeric array with direct values e.g "ArrayName":["Val1","Val2"] - use {{?}} place holder to reference individual value withen the markup region
+                           ii. Nexted array is allowed, use nested placeholder e.g {{ArrayName}}{{ArrayNameSub}}Markup{{ArrayNameSub}}{{ArrayName}}
+
+Empty Array Placeholder=>  Display Markup region if array is empty (total element is zero) - {{!ArrayName}}Markup{{!ArrayName}}
+                           
+Array Value Placeholder =>  Access a specific value in an array where markup region is not required.
+                           e.g "ArrayName":{"Key1":"Val1","Key2":{"Key21":"Val21","Key22":["Val221","Val222"]},"Key3":[{"Key31":"Val31"},{}]} - can reference Key3 specifically - 
+                           {{ArrayName->Key1}} will insert "Val1"
+                           {{ArrayName->Key2->Key21}} will insert "Val21"
+                           {{ArrayName->Key2->Key22[0]}} will insert "Val221"
+                           {{ArrayName->Key3[0]->Key31}} will insert "Val31"
+                           Note: Not working on database object from backend, works only on arrays for now
+
+                           Technical Limitation: 
+                           It performs its own loop on all the array data to fill the markup as required, which will still be performed when filling regular placeholder. The implication is aim engine loop through user data twice even when no placeholder specified withen markup
+
+Array Counter Placeholder=>Represent the counter of an Array Placeholder - {{$}} OR {{$ArrayName}}
+                           Note: Should be used withen an Array Placeholder
+
+Array Total Placeholder => Reference the total element of array -{{ArrayName->$}}
+
+Root Directory =>          for browser addressing/ point to the project root e.g {{/}}/Images/dg.jpg
+
+Current File Name =>        Access the current aim file loaded - {{@}} or {{__FILE__}}
+
+Aim Info =>                Details about the current Aim used - {{_}}
+
+Escape Placeholder =>    Help to escape the value to be inserted by the placeholder - {{\key}}
+                           e.g - filling data to be sent back to code behind - aim-data="name={{\UName}}"
+
+
+
+
+***Aim Data***
+
+1. Global Data =>    a json file that is accessible in any aim file withen the project directory
+                     the file name Must be included in the aim-ui-data array of the of aim config file ("aim-ui-data":["globalfile1.json","globalfile2.json"])
+
+2. Local Data =>     is accessible withen the page where it is decleared.
+                     Use the <aim-local-data> tag, it accept the following data declearation
+                     a. json
+                     b. path to a json file, must be presided with @, e.g @root://ui/file.json
+                     c. code behind decleration. (@path_to_codebehind_script FunctionNames)
+
+3. Codebehind Data =>Accessible withe the page where it is declare (calls codebehind script and make return data available) - 
+                     Read Aim Header Tag
+
+4. Fillable Data =>  is like local data, ecxept it is fillable, i.e-it content/value is dynamic
+                     Use the <aim-fill-data> tag, it accept only json structure and accept valid aim placeholders.
+
+5. Fillable-Only Data=> just like the Fillable Data except it ignores other data after it has been filled, i.e Aim uses
+                        Fillable-Only Data to fill the markup.
+                        Use the <aim-fill-data-only> tag
+
+Order of Preference
+--------------------
+*Fillable Data
+*Code Behind
+*Local Data
+*Global Data
+
+
+***Aim Protocol/Directory Control***
+Features
+1. Directory shorthand => Help to convert a particular directory to a protocol in aim file. e.g ./ui/design/centritab/home.aim, if ./ui/design/centritab/ is set as ui, then the file can be asseced as ui://home.aim
+2. External Project Inclusion => This help to include already design aim ui/code behind project into your new project, and you can access all file in included project as if it is part of your new project. Aim will also treat all included project as part of the new project, i.e  global datas, home.aim or index.aim files will be automatically accessed from the included directory as well. Though the new project directory takes the highest precedence
+
+Special Protocols
+1. root:// => reference the root directory of the project
+2. me:// => Use inside an external project that will be included, it reference the base/root of the external project (Note: the root/base directory of an external project is the directory set as protocol from the real project)
+3. aim:// => Aim dont resolve protocol at default, it  resolve when insue i.e sent to aim via aim-src of aim-datafill object, to make aim resolve the protocol at loadtime use the aim protocol, e.g <img src="aim://me://images/bg.jpeg" />. i.e to use aim protocol for non aim use, use the aim:// protocol
+NOTE: all special aim protocol must not be set as user-define protocols
+
+How to Setup Protocols
+1. In the <aim-directory   /> group of the aim.conf file
+2. add your new protocol to the aim-protocol array/object
+3. Use the protocol name as key and the directory path as value
+e.g "aim-protocol":{"ui":"root://../centritab/","engine":"root:/../engines/app/","myui":"root://ui/"}
+
+
+
+***Optimization Hint***
+1. From the backend, dont send unuse data, send only data that is needed in the frontend
+
+
+***Limitations***
+1. Repeated Nexted Key Identification: e.g {"Rows":{"Class":"rowclass","Columns":{"Class":"columnclass"}}} in this example all placeholder Class will be fill with "rowclass" including the one inside Columns region. Technically- the Class placeholder in Columns region is already fill alongs side Rows region, which is before column region is processed
