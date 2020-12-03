@@ -538,7 +538,8 @@ function __construct(){
      
     
     //#load the #aim.conf file
-    $confstr = file_get_contents($configurl);
+    $confstr = $this->FileGetContents($configurl);
+    // $confstr = file_get_contents($configurl);
     //$this->Error(["Code"=>"CF01","Line"=>__LINE__,"Message"=>htmlentities($confstr)]); 
     //$AimDir = "";
    //exit(htmlentities($confstr));
@@ -764,7 +765,8 @@ private function Widget(){
       
         
         //Get the file Content
-        $filcont = file_get_contents($widget);
+        // $filcont = file_get_contents($widget);
+        $filcont = $this->FileGetContents($widget);
         $filcont = $this->UpdateProtocols($filcont,$dir[0]);//
         $filcont = $this->UpdateBaseProtocol($filcont,$dir[1]);//UpdateBaseProtocol
        // $filcont = str_replace("me://",rtrim($dir[0],"/")."/",$filcont);
@@ -807,7 +809,8 @@ if(!in_array($bn,$uidataname,false))continue;
      
        
        //Get the file Content
-       $jsobcont = file_get_contents($json);
+    //    $jsobcont = file_get_contents($json);
+       $jsobcont = $this->FileGetContents($json);
        //update relateve address 
         $jsobcont = $this->UpdateProtocols($jsobcont,$dir[0]);
     $jsobcont = $this->UpdateBaseProtocol($jsobcont,$dir[1]);
@@ -3171,7 +3174,8 @@ public function DumpData($dataarr,$filcont,$aimwinClass,$pageTitle = "",$aimstyl
       
         
         //Get the file Content
-        $filcont = file_get_contents($param['Src']);
+        $filcont = $this->FileGetContents($param['Src']);
+        // $filcont = file_get_contents($param['Src']);
         //$filcont = $this->UpdateProtocols($filcont,trim($prot));
     }
         
@@ -3211,7 +3215,8 @@ public function DumpData($dataarr,$filcont,$aimwinClass,$pageTitle = "",$aimstyl
                                    //$ldata = '{"txt":"'.'@'.$ldata. ' '. $funcs.'"}';
                                 }else{
                                    // $ldata = '{"txt":"'.$ldata.' Get Content"}';
-                                  $ldata = file_get_contents($ldata);
+                                //   $ldata = file_get_contents($ldata);
+                                  $ldata = $this->FileGetContents($ldata);
                                 }
                                 
                             }else{
@@ -3616,6 +3621,20 @@ public function SendSMS($SName,$messagetext,$recipients,$countrycode = "234"){
 		return $data;
 }
 
+//Get file save
+public function FileGetContents($src){
+    session_start();
+    $srckey = str_replace(array("/","\\"),"_",$src);
+    if(isset($_SESSION[$srckey]) && trim($_SESSION[$srckey]) != ""){
+        $cont = $_SESSION[$srckey];
+    }else{
+        $cont = file_get_contents($src);
+        if($cont){
+         $_SESSION[$srckey] = $cont;
+        }
+    }
+    return $cont;
+}
 
 }
 //Main AIM Class Ends
