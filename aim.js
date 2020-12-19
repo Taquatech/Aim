@@ -8244,7 +8244,7 @@ var exclclsnm = calobj.RangeStart.getDate() + '_' + (calobj.RangeStart.getMonth(
             //maincont.className = ;
             maincont.style.position = "absolute";
            // console.log(maincont);
-            this.Target.value = "hhhh";
+            //this.Target.value = "hhhh";
             var t = document.createElement('div');
            //t.id = 'mc_' + Math.random() + CurDate.getTime();
             this.Target.insertAdjacentElement("afterend", maincont );

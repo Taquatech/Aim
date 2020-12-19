@@ -457,7 +457,7 @@ private $AimInfo = array(
 
 //The AIM #Config objects (#Main Array)
 //Aim #groupname
-private static $ConfigGroup = ["aim-connection", "aim-alias", "aim-printer","aim-directory","aim-mailer"];
+private static $ConfigGroup = ["aim-connection", "aim-alias", "aim-printer","aim-directory","aim-mailer","aim-sms"];
 //Internal Aim #config data (#aim.conf)
 private static $Config = [] ;
 //Aim #reference to #root #dir
@@ -3602,16 +3602,25 @@ public function SendSMS($SName,$messagetext,$recipients,$countrycode = "234"){
             if(substr($values,0,1) == "0")$suNum = substr($suNum,1);
 			$sendToBetasms.= $countrycode.$suNum.",";
 		}
-		$sendToBetasms =  rtrim($sendToBetasms,",");
+        $sendToBetasms =  rtrim($sendToBetasms,",");
+        $uname = 'enefiokduke@aksu.edu.ng'; 
+        $apikey='f4dd291643903ecc1068bbf34cbd7a838bedfdbf';
+        $url="http://api.ebulksms.com:8080/sendsms";
+        if(isset(self::$Config["aim-sms"])){
+          if(isset(self::$Config["aim-sms"]['aim-sms-url']))$url=self::$Config["aim-sms"]['aim-sms-url'];
+          if(isset(self::$Config["aim-sms"]['aim-sms-apikey']))$apikey=self::$Config["aim-sms"]['aim-sms-apikey'];
+          if(isset(self::$Config["aim-sms"]['aim-sms-username']))$uname=self::$Config["aim-sms"]['aim-sms-username'];
+        }
+        //return $data;
 		$query_str = http_build_query(array(
-			"username" => 'enefiokduke@aksu.edu.ng',
-			"apikey" => 'f4dd291643903ecc1068bbf34cbd7a838bedfdbf',
+			"username" => $uname,
+			"apikey" => $apikey,
 			"sender" => $SName,//sender name e.g FOLIM or TAQUATECH
 			"messagetext" => $messagetext,//sender msg
 			"flash" => 0,
 			"recipients" => trim($sendToBetasms)
 		));
-		$url = 'http://api.ebulksms.com:8080/sendsms?'.$query_str;
+		$url = $url.'?'.$query_str;
 		$handle = curl_init();
 		curl_setopt($handle, CURLOPT_URL, $url);
 		$data = curl_exec($handle);
@@ -3623,6 +3632,7 @@ public function SendSMS($SName,$messagetext,$recipients,$countrycode = "234"){
 
 //Get file save
 public function FileGetContents($src){
+    return  file_get_contents($src);
     session_start();
     $srckey = str_replace(array("/","\\"),"_",$src);
     if(isset($_SESSION[$srckey]) && trim($_SESSION[$srckey]) != ""){
