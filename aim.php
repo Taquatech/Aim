@@ -526,7 +526,8 @@ function __construct(){
     //$this->Error(["Code"=>"CF01","Line"=>__LINE__,"Message"=>$AimDir]);
     //seach for the aim.config in root folder
     $configs = $this->DirectorySearch('/aim\.conf$/',$rootfromaim);
-   
+    //print_r($rootfromaim);
+   //exit();
     
     $configurl = $AimDir.'aim.conf';
     //$configurl = "ggg";
@@ -682,6 +683,7 @@ private function ResolveProtocols(){
         if(is_array(self::$Config["aim-directory"]["aim-protocol"]) && count(self::$Config["aim-directory"]["aim-protocol"]) > 0){
             //update the protocols
             foreach(self::$Config["aim-directory"]["aim-protocol"] as $prot=>$addr){
+                
                 // $rprotocol[] = str_replace($prot."://",$addr,$url);
                 $rprotocol[] = [rtrim(str_replace("root://",self::$RootRef,$addr),"/")."/",$prot,rtrim(str_replace("root://","./",$addr),"/")."/"];
                // $rprotocolarr[] = str_replace("root://",self::$RootRef,$addr);
@@ -883,13 +885,19 @@ public function Push($Result){
    exit(json_encode($Result));
 }
 
+//save html to frontend
+public function HtmlSafe($str){
+    return htmlspecialchars($str);
+}
+
 //INTERNAL METHODS ENDS
 /*********************************** */
 
 //DATABASE METHODS
 //*************************************** */
    //function to escape string for database #sqlsafe
-  public function SqlSafe($str){
+  public function SqlSafe($str,$htmlsafe = false){
+      if($htmlsafe)$str = $this->HtmlSafe($str);
     if(!is_null($this->Connection)){
      $str = mysqli_real_escape_string($this->Connection,$str);
     }else{
@@ -900,7 +908,9 @@ public function Push($Result){
    public function Safe($str){
        return $this->SqlSafe($str);
    }
-
+   public function SS($str){
+    return $this->SqlSafe($str);
+}
  //#Insert into database
   public function Insert($tb,$fields){
     if(is_null($this->Connection)) return false;
@@ -924,8 +934,12 @@ public function Push($Result){
     if ($this->Connection->query($sql)) {
     return true;
     } else {
-    return $this->Connection->error.""; 
+    return $this->Connection->error; 
     }
+  }
+
+  public function I($tb,$fields){
+      return $this->Insert($tb,$fieldVal);
   }
 
   //#InsertID - #Insert into database and return the auto increment (generated) number #ID
@@ -938,6 +952,10 @@ public function Push($Result){
 	}
   }
 
+  public function IID($tb,$fieldVal){
+    return $this->InsertID($tb,$fieldVal);
+}
+
   public function InsertID2($tb,$fieldVal){
 	$rst = $this->Insert($tb,$fieldVal);
 	if($rst === true){
@@ -946,6 +964,10 @@ public function Push($Result){
 		return $rst;
 	}
   }
+
+  public function IID2($tb,$fieldVal){
+    return $this->InsertID2($tb,$fieldVal);
+}
 
   //Run #Query
   public function Query($query){
@@ -1026,6 +1048,10 @@ public function Push($Result){
     }else{
         return $queryRst;
     }
+ }
+ //ShortHand
+ public function SFR($tbs,$fields = "",$cond = "",$type=MYSQLI_BOTH){
+     return $this->SelectFirstRow($tbs,$fields,$cond,$type);
  }
 
  //#SelectRows
@@ -1282,6 +1308,7 @@ if (!$mail->send()) {
       global $AimDir;
       $protocols = self::$Protocols;
       $homedir = [];
+    
       //1. Check if home url is set;
      if(trim($homeurl) == ""){ //if no home url set
        
@@ -1302,6 +1329,8 @@ if (!$mail->send()) {
         }*/
      }
 
+     
+     //$this->Error(["Code"=>"CF01","Line"=>__LINE__,"Message"=>$homeurl]);
      //get the html struc
      $htmlst = self::$HtmlStruc;
      //if requires is loaded
@@ -1428,7 +1457,6 @@ if (!$mail->send()) {
       $homemarkup = "<h1>Aim cannot locate the  Home file </h1>".self::$RootRef;
      }else{
         
-        //$this->Error(["Code"=>"CF01","Line"=>__LINE__,"Message"=>$homedir[1]]);
         //read the file
         $rfile = $this->ReadFile(array("Src"=>$homeurl,"BaseProtocol"=>$homedir[1]));
         
@@ -1451,7 +1479,7 @@ if (!$mail->send()) {
         } */
      }
      $htmlst = str_replace("{{aim-html-body}}",$homemarkup,$htmlst);
-     
+     //exit($homese);
      //check if page title is set from home
      
      //print_r($rfile);
@@ -3632,17 +3660,22 @@ public function SendSMS($SName,$messagetext,$recipients,$countrycode = "234"){
 
 //Get file save
 public function FileGetContents($src){
-    return  file_get_contents($src);
-    session_start();
-    $srckey = str_replace(array("/","\\"),"_",$src);
-    if(isset($_SESSION[$srckey]) && trim($_SESSION[$srckey]) != ""){
-        $cont = $_SESSION[$srckey];
+    //return  file_get_contents($src);
+    if(isset(self::$Config["aim-directory"]["aim-cache"]) && self::$Config["aim-directory"]["aim-cache"] == true){
+     session_start();
+        $srckey = str_replace(array("/","\\"),"_",$src);
+        if(isset($_SESSION[$srckey]) && trim($_SESSION[$srckey]) != ""){
+            $cont = $_SESSION[$srckey];
+        }else{
+            $cont = file_get_contents($src);
+            if($cont){
+            $_SESSION[$srckey] = $cont;
+            }
+        }
     }else{
         $cont = file_get_contents($src);
-        if($cont){
-         $_SESSION[$srckey] = $cont;
-        }
     }
+    
     return $cont;
 }
 
